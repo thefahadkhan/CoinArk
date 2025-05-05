@@ -1,0 +1,74 @@
+/* General Container */
+.container {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    animation: fadeIn 1s ease-in-out;
+}
+
+/* Heading 1 */
+h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary));
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Card Styling */
+.card {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: .75rem;
+    transition: transform .3s, box-shadow .3s;
+    overflow: hidden;
+}
+
+/* Heading inside Cards */
+.card h2,
+.card h3 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+/* Paragraphs */
+p {
+    font-size: 1.125rem;
+    color: #a0a0a0;
+    margin-bottom: 1.25rem;
+}
+
+/* Grid System */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Secondary Text Color */
+.text-secondary {
+    color: #9ca3af;
+}
+
+/* Fade-in Animation */
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
