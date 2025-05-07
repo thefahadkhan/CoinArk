@@ -1,87 +1,144 @@
-import { useState, useEffect } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight, Loader } from "lucide-react";
-import { fetchCryptoNews } from "../lib/NewsAPI";
-import "../styles/NewsSection.css";
+import { useState, useEffect } from "react"
+import { ArrowRight, ChevronLeft, ChevronRight, Loader, RefreshCw } from "lucide-react"
+import { fetchCryptoNews } from "../lib/NewsAPI"
+import "../styles/NewsSection.css"
+
+// Cache duration in milliseconds (1 hour)
+const CACHE_DURATION = 60 * 60 * 1000
 
 const NewsSection = ({ fullView = false }) => {
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const articlesPerPage = fullView ? 15 : 6;
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const articlesPerPage = fullView ? 15 : 6
 
   useEffect(() => {
     const loadNews = async () => {
       try {
-        setLoading(true);
-        const newsData = await fetchCryptoNews();
-        setArticles(newsData);
-        setError(null);
+        setLoading(true)
+
+        // Check if we have cached news data
+        const cacheKey = "cryptoNews"
+        const cachedData = localStorage.getItem(cacheKey)
+
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData)
+          const now = Date.now()
+
+          // Use cached data if it's less than 1 hour old
+          if (now - timestamp < CACHE_DURATION) {
+            console.log("Using cached news data")
+            setArticles(data)
+            setError(null)
+            setLoading(false)
+            return
+          }
+        }
+
+        // Fetch fresh data if no cache or cache is expired
+        console.log("Fetching fresh news data")
+        const newsData = await fetchCryptoNews()
+        setArticles(newsData)
+        setError(null)
+
+        // Cache the new data with current timestamp
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            data: newsData,
+            timestamp: Date.now(),
+          }),
+        )
       } catch (err) {
-        setError("Failed to load news. Please try again later.");
-        console.error("Error fetching news:", err);
+        setError("Failed to load news. Please try again later.")
+        console.error("Error fetching news:", err)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    loadNews();
-  }, []);
+    loadNews()
+  }, [])
 
-  const totalPages = Math.ceil(articles.length / articlesPerPage);
-  const indexOfLastArticle = currentPage * articlesPerPage;
-  const indexOfFirstArticle = indexOfLastArticle - articlesPerPage;
-  const currentArticles = articles.slice(indexOfFirstArticle, indexOfLastArticle);
+  // Force refresh news data
+  const handleRefresh = async () => {
+    try {
+      setLoading(true)
+      const newsData = await fetchCryptoNews()
+      setArticles(newsData)
+      setError(null)
+
+      // Update cache with fresh data
+      localStorage.setItem(
+        "cryptoNews",
+        JSON.stringify({
+          data: newsData,
+          timestamp: Date.now(),
+        }),
+      )
+    } catch (err) {
+      setError("Failed to refresh news. Please try again later.")
+      console.error("Error refreshing news:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const totalPages = Math.ceil(articles.length / articlesPerPage)
+  const indexOfLastArticle = currentPage * articlesPerPage
+  const indexOfFirstArticle = indexOfLastArticle - articlesPerPage
+  const currentArticles = articles.slice(indexOfFirstArticle, indexOfLastArticle)
 
   const goToPage = (pageNumber) => {
-    setCurrentPage(pageNumber);
+    setCurrentPage(pageNumber)
     if (fullView) {
-      document.querySelector(".news-section")?.scrollIntoView({ behavior: "smooth" });
+      document.querySelector(".news-section")?.scrollIntoView({ behavior: "smooth" })
     }
-  };
+  }
 
   const goToPreviousPage = () => {
     if (currentPage > 1) {
-      goToPage(currentPage - 1);
+      goToPage(currentPage - 1)
     }
-  };
+  }
 
   const goToNextPage = () => {
     if (currentPage < totalPages) {
-      goToPage(currentPage + 1);
+      goToPage(currentPage + 1)
     }
-  };
+  }
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  };
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
 
   const getMainTag = (tags) => {
-    return tags && tags.length > 0 ? tags[0] : "Crypto";
-  };
+    return tags && tags.length > 0 ? tags[0] : "Crypto"
+  }
 
   const createExcerpt = (description, maxLength = 120) => {
-    if (!description) return "No description available.";
-    if (description.length <= maxLength) return description;
-    return `${description.substring(0, maxLength).trim()}...`;
-  };
+    if (!description) return "No description available."
+    if (description.length <= maxLength) return description
+    return `${description.substring(0, maxLength).trim()}...`
+  }
 
   const renderPaginationItems = () => {
-    const items = [];
-    const maxVisiblePages = 5;
-    let startPage = 1;
-    let endPage = totalPages;
+    const items = []
+    const maxVisiblePages = 5
+    let startPage = 1
+    let endPage = totalPages
 
     if (totalPages > maxVisiblePages) {
-      const halfVisible = Math.floor(maxVisiblePages / 2);
+      const halfVisible = Math.floor(maxVisiblePages / 2)
       if (currentPage <= halfVisible) {
-        endPage = maxVisiblePages;
+        endPage = maxVisiblePages
       } else if (currentPage >= totalPages - halfVisible) {
-        startPage = totalPages - maxVisiblePages + 1;
+        startPage = totalPages - maxVisiblePages + 1
       } else {
-        startPage = currentPage - halfVisible;
-        endPage = currentPage + halfVisible;
+        startPage = currentPage - halfVisible
+        endPage = currentPage + halfVisible
       }
     }
 
@@ -94,12 +151,12 @@ const NewsSection = ({ fullView = false }) => {
           aria-label={`Page ${i}`}
         >
           {i}
-        </button>
-      );
+        </button>,
+      )
     }
 
-    return items;
-  };
+    return items
+  }
 
   return (
     <section className="news-section">
@@ -112,10 +169,12 @@ const NewsSection = ({ fullView = false }) => {
               </h2>
               <p className="news-subtitle">Stay updated with the latest developments in the crypto world</p>
             </div>
-            <a href="/news" className="news-view-all">
-              View All News
-              <ArrowRight size={16} />
-            </a>
+            <div className="news-header-actions">
+              <a href="/news" className="news-view-all">
+                View All News
+                <ArrowRight size={16} />
+              </a>
+            </div>
           </div>
         )}
 
@@ -127,7 +186,7 @@ const NewsSection = ({ fullView = false }) => {
         ) : error ? (
           <div className="news-error">
             <p>{error}</p>
-            <button onClick={() => fetchCryptoNews().then(setArticles)} className="news-retry-button">
+            <button onClick={handleRefresh} className="news-retry-button">
               Try Again
             </button>
           </div>
@@ -146,7 +205,7 @@ const NewsSection = ({ fullView = false }) => {
                       alt={article.title}
                       className="news-card-image"
                       onError={(e) => {
-                        e.target.src = `/placeholder.svg?height=180&width=300`;
+                        e.target.src = `/placeholder.svg?height=180&width=300`
                       }}
                     />
                   </div>
@@ -188,7 +247,7 @@ const NewsSection = ({ fullView = false }) => {
         )}
       </div>
     </section>
-  );
-};
+  )
+}
 
 export default NewsSection;

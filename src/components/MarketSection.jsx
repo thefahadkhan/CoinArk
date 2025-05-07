@@ -7,6 +7,9 @@ import "../styles/MarketSection.css"
 const chartTypes = ["area", "bar", "line"]
 const timeframes = ["24h", "7d", "30d", "90d", "1y", "All"]
 
+// Cache duration in milliseconds (4 hour)
+const CACHE_DURATION = 4 * 60 * 60 * 1000
+
 const MarketSection = ({ fullView = false }) => {
   const [selectedChart, setSelectedChart] = useState("area")
   const [selectedTimeframe, setSelectedTimeframe] = useState("24h")
@@ -27,8 +30,35 @@ const MarketSection = ({ fullView = false }) => {
   useEffect(() => {
     const loadBitcoinData = async () => {
       try {
+        // Check if we have cached data for this timeframe
+        const cacheKey = `bitcoinData_${selectedTimeframe}`
+        const cachedData = localStorage.getItem(cacheKey)
+
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData)
+          const now = Date.now()
+
+          // Use cached data if it's less than 1 hour old
+          if (now - timestamp < CACHE_DURATION) {
+            console.log(`Using cached Bitcoin data for ${selectedTimeframe}`)
+            setBitcoinData(data)
+            return
+          }
+        }
+
+        // Fetch fresh data if no cache or cache is expired
+        console.log(`Fetching fresh Bitcoin data for ${selectedTimeframe}`)
         const data = await fetchBitcoinData(selectedTimeframe)
         setBitcoinData(data)
+
+        // Cache the new data with current timestamp
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            data,
+            timestamp: Date.now(),
+          }),
+        )
       } catch (error) {
         console.error("Failed to load Bitcoin data:", error)
       }
@@ -42,8 +72,37 @@ const MarketSection = ({ fullView = false }) => {
     const loadMarketData = async () => {
       if (bitcoinData.price > 0) {
         try {
+          // Check if we have cached market data
+          const cacheKey = "marketData"
+          const cachedData = localStorage.getItem(cacheKey)
+
+          if (cachedData) {
+            const { data, timestamp } = JSON.parse(cachedData)
+            const now = Date.now()
+
+            // Use cached data if it's less than 1 hour old
+            if (now - timestamp < CACHE_DURATION) {
+              console.log("Using cached market data")
+              setMarketStats(data)
+              setLoading(false)
+              return
+            }
+          }
+
+          // Fetch fresh data if no cache or cache is expired
+          console.log("Fetching fresh market data")
           const data = await fetchMarketData(bitcoinData.priceChange24h)
           setMarketStats(data)
+
+          // Cache the new data with current timestamp
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              data,
+              timestamp: Date.now(),
+            }),
+          )
+
           setLoading(false)
         } catch (error) {
           console.error("Failed to load market data:", error)
@@ -326,4 +385,4 @@ const MarketSection = ({ fullView = false }) => {
   )
 }
 
-export default MarketSection
+export default MarketSection;

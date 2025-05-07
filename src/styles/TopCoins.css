@@ -12,7 +12,6 @@
 .top-coins-header {
     margin-bottom: 2rem;
     text-align: left;
-    /* Changed from center to left */
 }
 
 .top-coins-title {
@@ -37,13 +36,11 @@
     margin-bottom: 2rem;
     display: flex;
     justify-content: flex-start;
-    /* Changed from center to flex-start */
 }
 
 .search-input-container {
     position: relative;
     width: 100%;
-    /* max-width: 900px; */
 }
 
 .neon-input {
@@ -152,7 +149,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-tertiary) 200%); */
     color: white;
     font-weight: 600;
 
@@ -161,7 +157,6 @@
 .coin-name-wrapper {
     display: flex;
     flex-direction: column;
-    /* align-items: center; */
     gap: 0.5rem;
 }
 
@@ -223,7 +218,6 @@
     color: #a0aec0;
 }
 
-/* Error State Styles */
 .error-container {
     display: flex;
     flex-direction: column;

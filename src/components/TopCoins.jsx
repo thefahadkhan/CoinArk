@@ -1,7 +1,12 @@
+"use client"
+
 import { useState, useEffect } from "react"
-import { ArrowUp, ArrowDown, Search, Eye, Loader } from "lucide-react"
+import { ArrowUp, ArrowDown, Search, Eye, Loader, RefreshCw } from "lucide-react"
 import { fetchTopCoins, loadWatchlist, saveWatchlist } from "../lib/CoinAPI"
 import "../styles/TopCoins.css"
+
+// Cache duration in milliseconds (1 hour)
+const CACHE_DURATION = 4* 60 * 60 * 1000
 
 const TopCoins = ({ fullView = false, limit = 100 }) => {
   const [coins, setCoins] = useState([])
@@ -12,14 +17,46 @@ const TopCoins = ({ fullView = false, limit = 100 }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Load coins data from API
+  // Load coins data from API or cache
   useEffect(() => {
     const loadCoins = async () => {
       try {
         setLoading(true)
+
+        // Check if we have cached data
+        const cacheKey = `topCoins_${limit}`
+        const cachedData = localStorage.getItem(cacheKey)
+
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData)
+          const now = Date.now()
+
+          // Use cached data if it's less than 1 hour old
+          if (now - timestamp < CACHE_DURATION) {
+            console.log(`Using cached cryptocurrency data (${new Date(timestamp).toLocaleTimeString()})`)
+            setCoins(data)
+
+            setError(null)
+            setLoading(false)
+            return
+          }
+        }
+
+        // Fetch fresh data if no cache or cache is expired
+        console.log("Fetching fresh cryptocurrency data")
         const data = await fetchTopCoins(limit)
         setCoins(data)
         setError(null)
+
+        // Cache the new data with current timestamp
+        const now = Date.now()
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            data,
+            timestamp: now,
+          }),
+        )
       } catch (err) {
         setError("Failed to load cryptocurrency data. Please try again later.")
         console.error(err)
@@ -30,11 +67,37 @@ const TopCoins = ({ fullView = false, limit = 100 }) => {
 
     loadCoins()
 
-    // Set up auto-refresh every 60 seconds
-    const refreshInterval = setInterval(loadCoins, 60000)
+    // Set up auto-refresh every 5 minutes (instead of 60 seconds)
+    // This is more cache-friendly while still keeping data relatively fresh
+    const refreshInterval = setInterval(loadCoins, 5 * 60 * 1000)
 
     return () => clearInterval(refreshInterval)
   }, [limit])
+
+  // Force refresh data
+  const handleRefresh = async () => {
+    try {
+      setLoading(true)
+      const data = await fetchTopCoins(limit)
+      setCoins(data)
+      setError(null)
+
+      // Update cache with fresh data
+      const now = Date.now()
+      localStorage.setItem(
+        `topCoins_${limit}`,
+        JSON.stringify({
+          data,
+          timestamp: now,
+        }),
+      )
+    } catch (err) {
+      setError("Failed to refresh cryptocurrency data. Please try again later.")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Load watchlist from localStorage
   useEffect(() => {
@@ -125,7 +188,7 @@ const TopCoins = ({ fullView = false, limit = 100 }) => {
         ) : error ? (
           <div className="error-container">
             <p className="error-message">{error}</p>
-            <button className="retry-button" onClick={() => fetchTopCoins(limit).then(setCoins)}>
+            <button className="retry-button" onClick={handleRefresh}>
               Retry
             </button>
           </div>
